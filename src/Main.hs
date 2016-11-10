@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -260,5 +259,5 @@ main = do
 --        insertIntoDB c new_results
         mapM_ print new_results
         let teamMap = IntMap.fromList (map (\t -> (getTeamId (teamId t), t)) ts)
-        mapM_ (postResult teamMap >> threadDelay 1000000) new_results
+        mapM_ (\s -> postResult teamMap s >> threadDelay 1000000) new_results
 
