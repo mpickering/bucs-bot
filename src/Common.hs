@@ -58,8 +58,7 @@ getTWInfoFromEnv = do
     return $ (setCredential oa cred def) { twProxy = pr }
 
 postMessage :: Text -> IO ()
-postMessage t = do
-    status <- T.concat . map T.pack <$> getArgs
+postMessage status = do
     T.putStrLn $ "Post message: " <> status
     twInfo <- getTWInfoFromEnv
     mgr <- newManager tlsManagerSettings

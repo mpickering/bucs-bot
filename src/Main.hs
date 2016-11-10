@@ -4,12 +4,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 
-module Main (main, initialiseTeams) where
+module Main (main) where
 
 import Control.Lens (to, only,(^?),ix, toListOf, filtered
                     , lengthOf, has, (^.), _Just, Traversal')
 import Data.HashMap.Strict (HashMap)
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString.Lazy (ByteString, pack)
 import Data.Text (Text, strip, unpack)
 import qualified Data.Text as T (drop, intercalate, uncons, break
                                 , lines, length, pack, append)
@@ -38,14 +38,15 @@ import GHC.Generics ( Generic)
 
 import Data.IntMap (IntMap, (!))
 import qualified Data.IntMap as IntMap
-import qualified Data.ByteString as BS (ByteString)
+import qualified Data.ByteString as BS (ByteString, pack, unpack)
+import System.Environment
+import qualified Data.ByteString.Char8 as BS8 (pack)
 
-
-databaseConfig :: BS.ByteString
-databaseConfig = "host='localhost' port=5432 dbname='ultimate'"
 
 mkConnection :: IO Connection
-mkConnection = connectPostgreSQL databaseConfig
+mkConnection = do
+  databaseConfig <- getEnv "DATABASE_URL"
+  connectPostgreSQL (BS8.pack databaseConfig)
 
 
 data Score = Score {
@@ -175,8 +176,8 @@ insertTeams c = void . executeMany c "INSERT INTO teams VALUES (?,?,?,?)"
 getTeams :: Connection -> IO [Team]
 getTeams c = query_ c "SELECT * FROM teams"
 
-initialiseTeams :: IO ()
-initialiseTeams = do
+initTeams :: IO ()
+initTeams = do
   c <- mkConnection
   teams >>= insertTeams c
   close c
@@ -217,7 +218,7 @@ calculuateNewResults :: [Score] -> [Score] -> [Score]
 calculuateNewResults oldscores newscores = newscores \\ oldscores
 
 postResult :: IntMap Team -> Score -> IO ()
-postResult ts = traceShowM . formatScore ts
+postResult ts = postMessage . formatScore ts
 
 formatScore :: IntMap Team -> Score -> Text
 formatScore ts (Score league _date team1 team2 (s1, s2)) =
@@ -250,13 +251,28 @@ formatScore ts (Score league _date team1 team2 (s1, s2)) =
 
 main :: IO ()
 main = do
+  args <- getArgs
+  case args of
+    ["update"] -> update
+    ["init"] -> initTeams >> initScores
+    ["initteams"] -> initTeams
+    ["initscores"] -> initScores
+
+initScores :: IO ()
+initScores = do
+  c <- mkConnection
+  ts <- getTeams c
+  results <- nub <$> getAllTeamScores ts
+  insertIntoDB c results
+
+update :: IO ()
+update = do
         c <- mkConnection
         ts <- getTeams c
-
         records <- getDBScores c
         results <- nub <$> getAllTeamScores ts
         let new_results = calculuateNewResults records results
---        insertIntoDB c new_results
+        insertIntoDB c new_results
         mapM_ print new_results
         let teamMap = IntMap.fromList (map (\t -> (getTeamId (teamId t), t)) ts)
         mapM_ (\s -> postResult teamMap s >> threadDelay 1000000) new_results
