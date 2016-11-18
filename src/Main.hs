@@ -43,19 +43,35 @@ import System.Environment
 import qualified Data.ByteString.Char8 as BS8 (pack)
 
 
+
+
+
+
+
+{-
+- Database Code
+-}
+
 mkConnection :: IO Connection
 mkConnection = do
   databaseConfig <- getEnv "DATABASE_URL"
   connectPostgreSQL (BS8.pack databaseConfig)
 
+-- Must only insert new values
+insertIntoDB :: Connection -> [Score] -> IO ()
+insertIntoDB c ss =
+  () <$ executeMany c "INSERT INTO scores values (?,?,?,?,?,?)" ss
 
-data Score = Score {
-    _leagueName :: Text
-  , _date :: Text
-  , _team1name :: TeamId
-  , _team2name :: TeamId
-  , _score :: (Int, Int)
-   } deriving (Eq, Show)
+-- Get all the scores, there will never be that many so just get them all.
+getDBScores :: Connection -> IO [Score]
+getDBScores c = query_ c "SELECT * FROM scores"
+
+insertTeams :: Connection -> [Team] -> IO ()
+insertTeams c = void . executeMany c "INSERT INTO teams VALUES (?,?,?,?)"
+
+getTeams :: Connection -> IO [Team]
+getTeams c = query_ c "SELECT * FROM teams"
+
 
 instance ToRow Score where
   toRow (Score a b c d (e, f)) =
@@ -67,19 +83,23 @@ instance FromRow Score where
     score <- (,) <$> field <*> field
     return (pres score)
 
+instance ToField TwitterHandle where
+    toField = toField . getTwitter
+instance ToField TeamId where
+    toField = toField . getTeamId
 
--- Must only insert new values
-insertIntoDB :: Connection -> [Score] -> IO ()
-insertIntoDB c ss =
-  () <$ executeMany c "INSERT INTO scores values (?,?,?,?,?,?)" ss
+instance FromField TwitterHandle where
+    fromField a b = TwitterHandle <$> (fromField a b)
+instance FromField TeamId where
+    fromField a b = TeamId <$> (fromField a b)
 
--- Get all the scores, there will never be that many so just get them all.
-getDBScores :: Connection -> IO [Score]
-getDBScores c = query_ c "SELECT * FROM scores"
+instance ToRow Team
+instance FromRow Team
 
-eitherToMaybe :: Either s a -> Maybe a
-eitherToMaybe (Left _) = Nothing
-eitherToMaybe (Right v) = Just v
+
+{-
+- Scraping
+-}
 
 splitScore :: Text -> Maybe (Int, Int)
 splitScore t =
@@ -110,7 +130,6 @@ urlToTeamId = TeamId . read . take 4 . drop (T.length sampleUrl) . unpack
 
 
 teamScores :: Response ByteString -> [Score]
-  --[Text.Taggy.DOM.Element]
 teamScores =
   let
     tableRows :: Response ByteString -> [Element]
@@ -146,17 +165,19 @@ teamScores =
 getInfoTable :: Traversal' (HashMap Text Text) ()
 getInfoTable = ix "class" . only "info-table"
 
+{-
+- Datatypes
+-}
+
+data Score = Score {
+    _leagueName :: Text
+  , _date :: Text
+  , _team1name :: TeamId
+  , _team2name :: TeamId
+  , _score :: (Int, Int)
+   } deriving (Eq, Show)
+
 newtype TeamId = TeamId { getTeamId :: Int } deriving (Generic, Show, Eq)
-
-instance ToField TwitterHandle where
-    toField = toField . getTwitter
-instance ToField TeamId where
-    toField = toField . getTeamId
-
-instance FromField TwitterHandle where
-    fromField a b = TwitterHandle <$> (fromField a b)
-instance FromField TeamId where
-    fromField a b = TeamId <$> (fromField a b)
 
 newtype TwitterHandle = TwitterHandle { getTwitter :: Text } deriving (Generic, Show)
 
@@ -167,14 +188,11 @@ data Team = Team {
   , teamNumber :: Int --Whether 1s 2s etc
   } deriving (Generic, Show)
 
-instance ToRow Team
-instance FromRow Team
 
-insertTeams :: Connection -> [Team] -> IO ()
-insertTeams c = void . executeMany c "INSERT INTO teams VALUES (?,?,?,?)"
+{-
+- Main Logic
+-}
 
-getTeams :: Connection -> IO [Team]
-getTeams c = query_ c "SELECT * FROM teams"
 
 initTeams :: IO ()
 initTeams = do
@@ -248,6 +266,10 @@ formatScore ts (Score league _date team1 team2 (s1, s2)) =
         5 -> "5th"
         _ -> "6th"
 
+{-
+- Main Entry
+-}
+
 
 main :: IO ()
 main = do
@@ -277,3 +299,10 @@ update = do
         let teamMap = IntMap.fromList (map (\t -> (getTeamId (teamId t), t)) ts)
         mapM_ (\s -> postResult teamMap s >> threadDelay 1000000) new_results
 
+{-
+- Utility
+-}
+
+eitherToMaybe :: Either s a -> Maybe a
+eitherToMaybe (Left _) = Nothing
+eitherToMaybe (Right v) = Just v
