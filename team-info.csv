@@ -3,8 +3,8 @@ Anglia Ruskin 1st (Cambridge),@ARUUltimate,1,7129
 Bangor 1st,@BangorUltimate,1,7130
 Bath 1st,@UOBathUltimate,1,7131
 Bath 2nd,@UOBathUltimate,2,7683
-Birmingham 1st,@unibhamultmate,1,7132
-Birmingham 2nd,@unibhamultmate,2,7133
+Birmingham 1st,@unibhamultimate,1,7132
+Birmingham 2nd,@unibhamultimate,2,7133
 Bournemouth 1st,@BournemouthHeat,1,7134
 Brighton 1st,@PanthersFrisbee,1,7135
 Bristol 1st,@TheMythagoBeast,1,7136
@@ -49,10 +49,10 @@ LSE 1st,@LSESUUltimate,1,7170
 Manchester 1st,@umultimate,1,7171
 Newcastle 1st,@Newcastle_Pies,1,7172
 Newcastle 2nd,@Newcastle_Pies,2,7691
-Northumbria 1st,Northumbria,1,7174
-Nottingham 1st,@UONUltimate,1,7175
-Nottingham 2nd,@UONUltimate,2,7176
-Nottingham 3rd,@UONUltimate,3,7177
+Northumbria 1st,@NorthUltimate,1,7174
+Nottingham 1st,@UltimateUoN,1,7175
+Nottingham 2nd,@UltimateUoN,2,7176
+Nottingham 3rd,@UltimateUoN,3,7177
 Nottingham Trent 1st,@NTUUltimate,1,7178
 Oxford 1st,@OxUniUltimate,1,7179
 Oxford Brookes 1st,@BrookesUltimate,1,7180
@@ -86,7 +86,7 @@ UCLAN 1st,@UCLan_Spinners,1,7139
 UWE 1st,@uwe_ultimate,1,7208
 Warwick 1st,@WarwickUltimate,1,7209
 Warwick 2nd,@WarwickUltimate,2,7210
-Winchester 1st,@FlyHardUltimate,1,7211
+Winchester 1st,@UoWUltimate,1,7211
 Worcester 1st,@worc_ultimate,1,7212
 York 1st,@YorkUniUltimate,1,7213
 York St John 1st,York St John,1,7214
@@ -94,5 +94,5 @@ York St John 2nd,York St John,2,7695
 Royal Holloway 1st,@RH_Ultimate,1,7186
 Chester 1st,None,1,7142
 UNSW 1st,None,1,7152
-Northampton 1st,None,1,7173
+Northampton 1st,@UONUltimate,1,7173
 Sunderland 2nd,None,2,7199
